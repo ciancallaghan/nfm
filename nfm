@@ -3,6 +3,8 @@
 import curses
 import os
 
+show_hidden = False
+
 def draw_listings(win, listings):
     for i, listing in enumerate(listings):
         win.addstr(i, 0, listing)
@@ -19,15 +21,26 @@ def getcurdir():
     return curdir
 
 def getlistings(cwd):
+    global show_hidden
+
     dirs = [x for x in os.listdir(cwd) if os.path.isdir(x)]
     files = [x for x in os.listdir(cwd) if os.path.isfile(x)]
+
+    if not show_hidden:
+        dirs = [x for x in dirs if not x.startswith(".")]
+        files = [x for x in files if not x.startswith(".")]
+
     # first directories then files
     listings = dirs + files
     return listings
 
 def key_handler(key):
+    global show_hidden
+
     if key == "q":
         exit()
+    elif key == ".":
+        show_hidden = not show_hidden
 
 def nfm(win = curses.initscr()):
     cwd = getcurdir()
@@ -40,6 +53,7 @@ def nfm(win = curses.initscr()):
 
     # main file-manager loop
     while True:
+        win.clear()
         listings = getlistings(cwd)
         draw_listings(win, listings)
         draw_statusbar(win, cwd)
