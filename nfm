@@ -70,6 +70,9 @@ def key_handler(win, key, cwd, listings):
     elif key == "l":
         new = cwd + "/" + listings[curr]
         opener(win, new)
+    elif key == "~":
+        os.chdir(os.path.expanduser("~"))
+        curr = 0
     # Others
     elif key == "!":
         os.environ["PS1"] = "[!]"
