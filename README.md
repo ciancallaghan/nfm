@@ -19,6 +19,14 @@ g: go to top
 G: go to bottom
 
 .: toggle hidden files
+sn: sort by name
+sN: sort by name, reversed
+sc: sort by ctime
+sC: sort by ctime, reversed
+sm: sort by mtime
+sM: sort by mtime, reversed
+ss: sort by size
+sS: sort by size, reversed
 
 !: open shell in current directory
 

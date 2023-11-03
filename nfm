@@ -5,6 +5,8 @@ import os
 import subprocess
 
 show_hidden = False
+sort_reverse = False
+sort_key = None
 curr = 0
 
 def draw_listings(win, listings):
@@ -35,6 +37,8 @@ def getcurdir():
 
 def getlistings(cwd):
     global show_hidden
+    global sort_reverse
+    global sort_key
 
     dirs = [x for x in os.listdir(cwd) if os.path.isdir(x)]
     files = [x for x in os.listdir(cwd) if os.path.isfile(x)]
@@ -44,8 +48,8 @@ def getlistings(cwd):
         files = [x for x in files if not x.startswith(".")]
 
     # sorting
-    dirs.sort()
-    files.sort()
+    dirs.sort(key=sort_key, reverse=sort_reverse)
+    files.sort(key=sort_key, reverse=sort_reverse)
 
     # first directories then files
     listings = dirs + files
@@ -54,12 +58,40 @@ def getlistings(cwd):
 def key_handler(win, key, cwd, listings):
     global show_hidden
     global curr
+    global sort_reverse
+    global sort_key
 
     if key == "q":
         exit()
     # Toggles
     elif key == ".":
         show_hidden = not show_hidden
+    elif key == "s":
+        key = win.getkey()
+        if key == "n":
+            sort_reverse = False
+            sort_key = None
+        elif key == "N":
+            sort_reverse = True
+            sort_key = None
+        elif key == "c":
+            sort_reverse = False
+            sort_key = os.path.getctime
+        elif key == "C":
+            sort_reverse = True
+            sort_key = os.path.getctime
+        elif key == "m":
+            sort_reverse = False
+            sort_key = os.path.getmtime
+        elif key == "M":
+            sort_reverse = True
+            sort_key = os.path.getmtime
+        elif key == "s":
+            sort_reverse = False
+            sort_key = os.path.getsize
+        elif key == "S":
+            sort_reverse = True
+            sort_key = os.path.getsize
     # Movement
     elif key == "j" and curr+1 < len(listings):
         curr += 1
