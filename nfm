@@ -3,6 +3,10 @@
 import curses
 import os
 
+def draw_listings(win, listings):
+    for i, listing in enumerate(listings):
+        win.addstr(i, 0, listing)
+
 def draw_statusbar(win, cwd):
     status_text = cwd
     status_text += (" " * (curses.COLS - len(status_text)))
@@ -13,6 +17,13 @@ def getcurdir():
     curdir = os.path.expanduser(curdir)
     curdir = os.path.normpath(curdir)
     return curdir
+
+def getlistings(cwd):
+    dirs = [x for x in os.listdir(cwd) if os.path.isdir(x)]
+    files = [x for x in os.listdir(cwd) if os.path.isfile(x)]
+    # first directories then files
+    listings = dirs + files
+    return listings
 
 def key_handler(key):
     if key == "q":
@@ -29,6 +40,8 @@ def nfm(win = curses.initscr()):
 
     # main file-manager loop
     while True:
+        listings = getlistings(cwd)
+        draw_listings(win, listings)
         draw_statusbar(win, cwd)
         key_handler(win.getkey())
 
