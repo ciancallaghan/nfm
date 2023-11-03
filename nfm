@@ -88,8 +88,12 @@ def opener(win, new):
         curr = 0
     else:
         curses.endwin()
-        subprocess.call([os.environ["NFM_OPENER"], new])
-        win.refresh()
+        try:
+            subprocess.call([os.environ["NFM_OPENER"], new])
+        except:
+            subprocess.call(["xdg-open", new])
+        finally:
+            win.refresh()
 
 def nfm(win = curses.initscr()):
     # ncurses settings
