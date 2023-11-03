@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+
+import curses
+import os
+
+def draw_statusbar(win, cwd):
+    status_text = cwd
+    status_text += (" " * (curses.COLS - len(status_text)))
+    win.addstr(curses.LINES - 2, 0, status_text, curses.A_REVERSE)
+
+def getcurdir():
+    curdir = os.getcwd()
+    curdir = os.path.expanduser(curdir)
+    curdir = os.path.normpath(curdir)
+    return curdir
+
+def key_handler(key):
+    if key == "q":
+        exit()
+
+def nfm(win = curses.initscr()):
+    cwd = getcurdir()
+
+    # ncurses settings
+    curses.noecho()
+    curses.cbreak()
+    curses.curs_set(False)
+    curses.use_default_colors()
+
+    # main file-manager loop
+    while True:
+        draw_statusbar(win, cwd)
+        key_handler(win.getkey())
+
+curses.wrapper(nfm)
