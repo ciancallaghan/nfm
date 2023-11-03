@@ -4,10 +4,16 @@ import curses
 import os
 
 show_hidden = False
+curr = 0
 
 def draw_listings(win, listings):
+    global curr
+
     for i, listing in enumerate(listings):
-        win.addstr(i, 0, listing)
+        if i == curr:
+            win.addstr(i, 0, listing, curses.A_REVERSE)
+        else:
+            win.addstr(i, 0, listing)
 
 def draw_statusbar(win, cwd):
     global show_hidden
@@ -38,13 +44,18 @@ def getlistings(cwd):
     listings = dirs + files
     return listings
 
-def key_handler(key):
+def key_handler(key, amount):
     global show_hidden
+    global curr
 
     if key == "q":
         exit()
     elif key == ".":
         show_hidden = not show_hidden
+    elif key == "j" and curr+1 < amount:
+        curr += 1
+    elif key == "k" and curr-1 > -1:
+        curr -= 1
 
 def nfm(win = curses.initscr()):
     cwd = getcurdir()
@@ -61,6 +72,6 @@ def nfm(win = curses.initscr()):
         listings = getlistings(cwd)
         draw_listings(win, listings)
         draw_statusbar(win, cwd)
-        key_handler(win.getkey())
+        key_handler(win.getkey(), len(listings))
 
 curses.wrapper(nfm)
