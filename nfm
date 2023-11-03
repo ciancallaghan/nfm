@@ -56,6 +56,10 @@ def key_handler(key, amount):
         curr += 1
     elif key == "k" and curr-1 > -1:
         curr -= 1
+    elif key == "g":
+        curr = 0
+    elif key == "G":
+        curr = amount - 1
 
 def nfm(win = curses.initscr()):
     cwd = getcurdir()
