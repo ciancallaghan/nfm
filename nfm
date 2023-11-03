@@ -13,6 +13,8 @@ def draw_listings(win, listings):
     for i, listing in enumerate(listings):
         if i == curr:
             win.addstr(i, 0, listing, curses.A_REVERSE)
+        elif os.path.isdir(listing):
+            win.addstr(i, 0, listing, curses.A_BOLD)
         else:
             win.addstr(i, 0, listing)
 
