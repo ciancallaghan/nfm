@@ -20,6 +20,9 @@ def draw_listings(win, listings):
         else:
             win.addstr(i, 0, listing)
 
+def draw_message(win, msg):
+    win.addstr(curses.LINES - 2, 0, msg, curses.A_REVERSE)
+
 def draw_statusbar(win, cwd):
     global show_hidden
 
@@ -67,6 +70,15 @@ def key_handler(win, key, cwd, listings):
     elif key == ".":
         show_hidden = not show_hidden
     elif key == "s":
+        sort_msg = "n:name"
+        sort_msg += "  N:name,reversed"
+        sort_msg += "  c:ctime"
+        sort_msg += "  C:ctime,reversed"
+        sort_msg += "  m:mtime"
+        sort_msg += "  M:mtime,reversed"
+        sort_msg += "  s:size"
+        sort_msg += "  S:size,reversed"
+        draw_message(win, sort_msg)
         key = win.getkey()
         if key == "n":
             sort_reverse = False
