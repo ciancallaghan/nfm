@@ -10,7 +10,11 @@ def draw_listings(win, listings):
         win.addstr(i, 0, listing)
 
 def draw_statusbar(win, cwd):
+    global show_hidden
+
     status_text = cwd
+    if show_hidden:
+        status_text += " [.]"
     status_text += (" " * (curses.COLS - len(status_text)))
     win.addstr(curses.LINES - 2, 0, status_text, curses.A_REVERSE)
 
