@@ -44,7 +44,7 @@ def getlistings(cwd):
     listings = dirs + files
     return listings
 
-def key_handler(key, amount):
+def key_handler(key, cwd, listings):
     global show_hidden
     global curr
 
@@ -52,16 +52,26 @@ def key_handler(key, amount):
         exit()
     elif key == ".":
         show_hidden = not show_hidden
-    elif key == "j" and curr+1 < amount:
+    elif key == "j" and curr+1 < len(listings):
         curr += 1
     elif key == "k" and curr-1 > -1:
         curr -= 1
     elif key == "g":
         curr = 0
     elif key == "G":
-        curr = amount - 1
+        curr = len(listings) - 1
     elif key == "h":
         os.chdir("..")
+        curr = 0
+    elif key == "l":
+        new = cwd + "/" + listings[curr]
+        opener(new)
+
+def opener(new):
+    global curr
+
+    if os.path.isdir(new):
+        os.chdir(new)
         curr = 0
 
 def nfm(win = curses.initscr()):
@@ -78,6 +88,6 @@ def nfm(win = curses.initscr()):
         listings = getlistings(cwd)
         draw_listings(win, listings)
         draw_statusbar(win, cwd)
-        key_handler(win.getkey(), len(listings))
+        key_handler(win.getkey(), cwd, listings)
 
 curses.wrapper(nfm)
