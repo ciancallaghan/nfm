@@ -2,6 +2,7 @@
 
 import curses
 import os
+import subprocess
 
 show_hidden = False
 curr = 0
@@ -44,7 +45,7 @@ def getlistings(cwd):
     listings = dirs + files
     return listings
 
-def key_handler(key, cwd, listings):
+def key_handler(win, key, cwd, listings):
     global show_hidden
     global curr
 
@@ -65,14 +66,18 @@ def key_handler(key, cwd, listings):
         curr = 0
     elif key == "l":
         new = cwd + "/" + listings[curr]
-        opener(new)
+        opener(win, new)
 
-def opener(new):
+def opener(win, new):
     global curr
 
     if os.path.isdir(new):
         os.chdir(new)
         curr = 0
+    else:
+        curses.endwin()
+        subprocess.call([os.environ["NFM_OPENER"], new])
+        win.refresh()
 
 def nfm(win = curses.initscr()):
     # ncurses settings
@@ -88,6 +93,6 @@ def nfm(win = curses.initscr()):
         listings = getlistings(cwd)
         draw_listings(win, listings)
         draw_statusbar(win, cwd)
-        key_handler(win.getkey(), cwd, listings)
+        key_handler(win, win.getkey(), cwd, listings)
 
 curses.wrapper(nfm)
