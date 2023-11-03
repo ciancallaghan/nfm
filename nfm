@@ -43,6 +43,10 @@ def getlistings(cwd):
         dirs = [x for x in dirs if not x.startswith(".")]
         files = [x for x in files if not x.startswith(".")]
 
+    # sorting
+    dirs.sort()
+    files.sort()
+
     # first directories then files
     listings = dirs + files
     return listings
