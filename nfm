@@ -60,10 +60,11 @@ def key_handler(key, amount):
         curr = 0
     elif key == "G":
         curr = amount - 1
+    elif key == "h":
+        os.chdir("..")
+        curr = 0
 
 def nfm(win = curses.initscr()):
-    cwd = getcurdir()
-
     # ncurses settings
     curses.noecho()
     curses.cbreak()
@@ -72,6 +73,7 @@ def nfm(win = curses.initscr()):
 
     # main file-manager loop
     while True:
+        cwd = getcurdir()
         win.clear()
         listings = getlistings(cwd)
         draw_listings(win, listings)
