@@ -51,8 +51,10 @@ def key_handler(win, key, cwd, listings):
 
     if key == "q":
         exit()
+    # Toggles
     elif key == ".":
         show_hidden = not show_hidden
+    # Movement
     elif key == "j" and curr+1 < len(listings):
         curr += 1
     elif key == "k" and curr-1 > -1:
@@ -61,12 +63,19 @@ def key_handler(win, key, cwd, listings):
         curr = 0
     elif key == "G":
         curr = len(listings) - 1
+    # Traversing directories/files
     elif key == "h":
         os.chdir("..")
         curr = 0
     elif key == "l":
         new = cwd + "/" + listings[curr]
         opener(win, new)
+    # Others
+    elif key == "!":
+        os.environ["PS1"] = "[!]"
+        curses.endwin()
+        subprocess.call(os.environ["SHELL"])
+        win.refresh()
 
 def opener(win, new):
     global curr
