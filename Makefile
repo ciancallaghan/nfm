@@ -1,15 +1,17 @@
-PREFIX ?= /usr
-DOCDIR ?= $(PREFIX)/share/doc/nfm
+PREFIX = /usr
+BINDIR = $(PREFIX)/bin
+DOCDIR = $(PREFIX)/share/doc/nfm
 
 all:
 	@echo Run \'make install\' to install nfm.
 
 install:
-	@mkdir -p $(PREFIX)/bin
-	@mkdir -p $(PREFIX)$(DOCDIR)
-	@cp -p nfm $(PREFIX)/bin/nfm
-	@cp -p README.md $(PREFIX)$(DOCDIR)
+	@mkdir -p $(BINDIR)
+	@mkdir -p $(DOCDIR)
+	@cp -p nfm $(BINDIR)/nfm
+	@cp -p README.md $(DOCDIR)
+	@cp -p -r examples $(DOCDIR)
 
 uninstall:
-	@rm -rf $(PREFIX)/bin/nfm
-	@rm -rf $(PREFIX)$(DOCDIR)
+	@rm -rf $(BINDIR)/nfm
+	@rm -rf $(DOCDIR)
