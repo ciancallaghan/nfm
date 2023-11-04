@@ -8,20 +8,28 @@ show_hidden = False
 sort_reverse = False
 sort_key = None
 curr = 0
+to_delete = []
 
 def draw_listings(win, listings):
     global curr
+    global to_delete
 
     for i, listing in enumerate(listings):
-        if i == curr:
-            win.addstr(i, 0, listing, curses.A_REVERSE)
+        if listing in to_delete and i == curr:
+            win.addstr(i, 0, "*"+listing.split("/")[-1], curses.A_REVERSE) 
+        elif i == curr:
+            win.addstr(i, 0, listing.split("/")[-1], curses.A_REVERSE)
+        elif listing in to_delete:
+            win.addstr(i, 0, "*" + listing.split("/")[-1], curses.COLOR_RED)
         elif os.path.isdir(listing):
-            win.addstr(i, 0, listing, curses.A_BOLD)
+            win.addstr(i, 0, listing.split("/")[-1], curses.A_BOLD)
         else:
-            win.addstr(i, 0, listing)
+            win.addstr(i, 0, listing.split("/")[-1])
 
-def draw_message(win, msg):
+def draw_message(win, msg, wait=False):
     win.addstr(curses.LINES - 2, 0, msg, curses.A_REVERSE)
+    if wait:
+        win.getch()
 
 def draw_statusbar(win, cwd):
     global show_hidden
@@ -39,6 +47,23 @@ def draw_statusbar(win, cwd):
         status_text += " [R]"
     status_text += (" " * (curses.COLS - len(status_text)))
     win.addstr(curses.LINES - 2, 0, status_text, curses.A_REVERSE)
+
+def delete_files(win):
+    global to_delete
+
+    for file in to_delete:
+        if os.path.isfile(file):
+            try:
+                os.remove(file)
+                to_delete.remove(file)
+            except:
+                draw_message(win, "File could not be deleted.", True)
+        elif os.path.isdir(file):
+            try:
+                os.rmdir(file)
+                to_delete.remove(file)
+            except:
+                draw_message(win, "Folder could not be deleted. Is it empty?", True)
 
 def getcurdir():
     curdir = os.getcwd()
@@ -64,6 +89,7 @@ def getlistings(cwd):
 
     # first directories then files
     listings = dirs + files
+    listings = [cwd + "/" + x for x in listings]
     return listings
 
 def key_handler(win, key, cwd, listings):
@@ -126,17 +152,27 @@ def key_handler(win, key, cwd, listings):
         os.chdir("..")
         curr = 0
     elif key == "l":
-        new = cwd + "/" + listings[curr]
+        new = listings[curr]
         opener(win, new)
     elif key == "~":
         os.chdir(os.path.expanduser("~"))
         curr = 0
+    # File actions
+    elif key == "d":
+        if listings[curr] in to_delete:
+            to_delete.remove(listings[curr])
+        else:
+            to_delete.append(listings[curr])
+    elif key == "p":
+        delete_files(win)
+        win.clear()
     # Others
     elif key == "!":
         os.environ["PS1"] = "[!]"
         curses.endwin()
         subprocess.call(os.environ["SHELL"])
         win.refresh()
+        win.clear()
 
 def opener(win, new):
     global curr
@@ -152,6 +188,7 @@ def opener(win, new):
             subprocess.call(["xdg-open", new])
         finally:
             win.refresh()
+            win.clear()
 
 def nfm(win = curses.initscr()):
     # ncurses settings
