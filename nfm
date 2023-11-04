@@ -16,11 +16,11 @@ def draw_listings(win, listings):
 
     for i, listing in enumerate(listings):
         if listing in to_delete and i == curr:
-            win.addstr(i, 0, "*"+listing.split("/")[-1], curses.A_REVERSE) 
+            win.addstr(i, 0, "*"+listing.split("/")[-1], curses.A_REVERSE | curses.color_pair(1))
         elif i == curr:
             win.addstr(i, 0, listing.split("/")[-1], curses.A_REVERSE)
         elif listing in to_delete:
-            win.addstr(i, 0, "*" + listing.split("/")[-1], curses.COLOR_RED)
+            win.addstr(i, 0, "*" + listing.split("/")[-1], curses.color_pair(1))
         elif os.path.isdir(listing):
             win.addstr(i, 0, listing.split("/")[-1], curses.A_BOLD)
         else:
@@ -29,7 +29,7 @@ def draw_listings(win, listings):
 def draw_message(win, msg, wait=False):
     msg += (" " * (curses.COLS - len(msg)))
     if wait:
-        win.addstr(curses.LINES - 2, 0, msg, curses.color_pair(1))
+        win.addstr(curses.LINES - 2, 0, msg, curses.A_REVERSE | curses.color_pair(1))
         win.getch()
     else:
         win.addstr(curses.LINES - 2, 0, msg, curses.A_REVERSE)
@@ -199,7 +199,7 @@ def nfm(win = curses.initscr()):
     curses.cbreak()
     curses.curs_set(False)
     curses.use_default_colors()
-    curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_RED)
+    curses.init_pair(1, curses.COLOR_RED, -1)
 
     # main file-manager loop
     while True:
