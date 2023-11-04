@@ -29,6 +29,14 @@ def draw_statusbar(win, cwd):
     status_text = cwd
     if show_hidden:
         status_text += " [.]"
+    if sort_key == os.path.getctime:
+        status_text += " [c]"
+    if sort_key == os.path.getmtime:
+        status_text += " [m]"
+    if sort_key == os.path.getsize:
+        status_text += " [s]"
+    if sort_reverse:
+        status_text += " [R]"
     status_text += (" " * (curses.COLS - len(status_text)))
     win.addstr(curses.LINES - 2, 0, status_text, curses.A_REVERSE)
 
