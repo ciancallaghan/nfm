@@ -27,9 +27,12 @@ def draw_listings(win, listings):
             win.addstr(i, 0, listing.split("/")[-1])
 
 def draw_message(win, msg, wait=False):
-    win.addstr(curses.LINES - 2, 0, msg, curses.A_REVERSE)
+    msg += (" " * (curses.COLS - len(msg)))
     if wait:
+        win.addstr(curses.LINES - 2, 0, msg, curses.color_pair(1))
         win.getch()
+    else:
+        win.addstr(curses.LINES - 2, 0, msg, curses.A_REVERSE)
 
 def draw_statusbar(win, cwd):
     global show_hidden
@@ -196,6 +199,7 @@ def nfm(win = curses.initscr()):
     curses.cbreak()
     curses.curs_set(False)
     curses.use_default_colors()
+    curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_RED)
 
     # main file-manager loop
     while True:
