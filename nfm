@@ -8,16 +8,24 @@ show_hidden = False
 sort_reverse = False
 sort_key = None
 curr = 0
+top_line = 0
 to_delete = []
 
 def draw_listings(win, listings):
     global curr
+    global top_line
     global to_delete
 
+    if len(listings) > curses.LINES - 3:
+        listings = listings[top_line:top_line + curses.LINES-2]
+        temp_curr = curr - top_line
+    else:
+        temp_curr = curr
+
     for i, listing in enumerate(listings):
-        if listing in to_delete and i == curr:
+        if listing in to_delete and i == temp_curr:
             win.addstr(i, 0, "*"+listing.split("/")[-1], curses.A_REVERSE | curses.color_pair(1))
-        elif i == curr:
+        elif i == temp_curr:
             win.addstr(i, 0, listing.split("/")[-1], curses.A_REVERSE)
         elif listing in to_delete:
             win.addstr(i, 0, "*" + listing.split("/")[-1], curses.color_pair(1))
@@ -98,6 +106,7 @@ def getlistings(cwd):
 def key_handler(win, key, cwd, listings):
     global show_hidden
     global curr
+    global top_line
     global sort_reverse
     global sort_key
 
@@ -144,19 +153,31 @@ def key_handler(win, key, cwd, listings):
     # Movement
     elif key == "j" and curr+1 < len(listings):
         curr += 1
+        if curr >= curses.LINES - 2 and top_line < curses.LINES:
+            top_line += 1
     elif key == "k" and curr-1 > -1:
         curr -= 1
+        if top_line > 0 and curr < top_line:
+            top_line -= 1
     elif key == "g":
         curr = 0
+        top_line = 0
     elif key == "G":
         curr = len(listings) - 1
+        # Doesn't actually work how I want it.
+        # Needs to be redone.
+        # Currently only scolls to end of visible page.
+        if len(listings) > curses.LINES - 2:
+            curr = curses.LINES - 3 + top_line
     # Traversing directories/files
     elif key == "h":
         os.chdir("..")
         curr = 0
+        top_line = 0
     elif key == "l":
         new = listings[curr]
         opener(win, new)
+        top_line = 0
     elif key == "~":
         os.chdir(os.path.expanduser("~"))
         curr = 0
