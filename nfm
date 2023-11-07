@@ -4,231 +4,165 @@ import curses
 import os
 import subprocess
 
-show_hidden = False
-sort_reverse = False
-sort_key = None
-curr = 0
-top_line = 0
-to_delete = []
 
-def draw_listings(win, listings):
-    global curr
-    global top_line
-    global to_delete
+class Browser:
+    def __init__(self, stdscr):
+        self.stdscr = stdscr
+        self.height, self.width = self.stdscr.getmaxyx()
+        self.mainwin = curses.newwin(self.height - 2, self.width - 1, 0, 0)
+        self.statusbar = curses.newwin(2, self.width - 1, self.height - 2, 0)
+        self.offset = 0
+        self.curr = 0
+        # ncurses settings
+        curses.noecho()
+        curses.cbreak()
+        curses.curs_set(False)
+        curses.use_default_colors()
+        # user settings
+        self.show_hidden_files = False
 
-    if len(listings) > curses.LINES - 3:
-        listings = listings[top_line:top_line + curses.LINES-2]
-        temp_curr = curr - top_line
-    else:
-        temp_curr = curr
-
-    for i, listing in enumerate(listings):
-        if listing in to_delete and i == temp_curr:
-            win.addstr(i, 0, "*"+listing.split("/")[-1], curses.A_REVERSE | curses.color_pair(1))
-        elif i == temp_curr:
-            win.addstr(i, 0, listing.split("/")[-1], curses.A_REVERSE)
-        elif listing in to_delete:
-            win.addstr(i, 0, "*" + listing.split("/")[-1], curses.color_pair(1))
-        elif os.path.isdir(listing):
-            win.addstr(i, 0, listing.split("/")[-1], curses.A_BOLD)
+    def draw_mainwin(self):
+        # check if too many listings for screen
+        if len(self.listings) >= self.height - 2:
+            listings = self.listings[self.offset:self.height + self.offset]
         else:
-            win.addstr(i, 0, listing.split("/")[-1])
-
-def draw_message(win, msg, wait=False):
-    msg += (" " * (curses.COLS - len(msg)))
-    if wait:
-        win.addstr(curses.LINES - 2, 0, msg, curses.A_REVERSE | curses.color_pair(1))
-        win.getch()
-    else:
-        win.addstr(curses.LINES - 2, 0, msg, curses.A_REVERSE)
-
-def draw_statusbar(win, cwd):
-    global show_hidden
-
-    status_text = cwd
-    if show_hidden:
-        status_text += " [.]"
-    if sort_key == os.path.getctime:
-        status_text += " [c]"
-    if sort_key == os.path.getmtime:
-        status_text += " [m]"
-    if sort_key == os.path.getsize:
-        status_text += " [s]"
-    if sort_reverse:
-        status_text += " [R]"
-    status_text += (" " * (curses.COLS - len(status_text)))
-    win.addstr(curses.LINES - 2, 0, status_text, curses.A_REVERSE)
-
-def delete_files(win):
-    global to_delete
-
-    for file in to_delete:
-        if os.path.isfile(file):
+            listings = self.listings
+        # display listings
+        self.mainwin.clear()
+        for i, listing in enumerate(listings):
             try:
-                os.remove(file)
-                to_delete.remove(file)
+                if i == self.curr - self.offset:
+                    self.mainwin.addstr(i, 0, listing.split("/")[-1], curses.A_REVERSE)
+                elif os.path.isdir(listing):
+                    self.mainwin.addstr(i, 0, listing.split("/")[-1], curses.A_BOLD)
+                else:
+                    self.mainwin.addstr(i, 0, listing.split("/")[-1])
             except:
-                draw_message(win, "File could not be deleted.", True)
-        elif os.path.isdir(file):
-            try:
-                os.rmdir(file)
-                to_delete.remove(file)
-            except:
-                draw_message(win, "Folder could not be deleted. Is it empty?", True)
+                pass
+        self.mainwin.refresh()
 
-def getcurdir():
-    curdir = os.getcwd()
-    curdir = os.path.expanduser(curdir)
-    curdir = os.path.normpath(curdir)
-    return curdir
-
-def getlistings(cwd):
-    global show_hidden
-    global sort_reverse
-    global sort_key
-
-    dirs = [x for x in os.listdir(cwd) if os.path.isdir(x)]
-    files = [x for x in os.listdir(cwd) if os.path.isfile(x)]
-
-    if not show_hidden:
-        dirs = [x for x in dirs if not x.startswith(".")]
-        files = [x for x in files if not x.startswith(".")]
-
-    # sorting
-    dirs.sort(key=sort_key, reverse=sort_reverse)
-    files.sort(key=sort_key, reverse=sort_reverse)
-
-    # first directories then files
-    listings = dirs + files
-    listings = [cwd + "/" + x for x in listings]
-    return listings
-
-def key_handler(win, key, cwd, listings):
-    global show_hidden
-    global curr
-    global top_line
-    global sort_reverse
-    global sort_key
-
-    if key == "q":
-        exit()
-    # Toggles
-    elif key == ".":
-        show_hidden = not show_hidden
-    elif key == "s":
-        sort_msg = "n:name"
-        sort_msg += "  N:name,reversed"
-        sort_msg += "  c:ctime"
-        sort_msg += "  C:ctime,reversed"
-        sort_msg += "  m:mtime"
-        sort_msg += "  M:mtime,reversed"
-        sort_msg += "  s:size"
-        sort_msg += "  S:size,reversed"
-        draw_message(win, sort_msg)
-        key = win.getkey()
-        if key == "n":
-            sort_reverse = False
-            sort_key = None
-        elif key == "N":
-            sort_reverse = True
-            sort_key = None
-        elif key == "c":
-            sort_reverse = False
-            sort_key = os.path.getctime
-        elif key == "C":
-            sort_reverse = True
-            sort_key = os.path.getctime
-        elif key == "m":
-            sort_reverse = False
-            sort_key = os.path.getmtime
-        elif key == "M":
-            sort_reverse = True
-            sort_key = os.path.getmtime
-        elif key == "s":
-            sort_reverse = False
-            sort_key = os.path.getsize
-        elif key == "S":
-            sort_reverse = True
-            sort_key = os.path.getsize
-    # Movement
-    elif key == "j" and curr+1 < len(listings):
-        curr += 1
-        if curr >= curses.LINES - 2 and top_line < curses.LINES:
-            top_line += 1
-    elif key == "k" and curr-1 > -1:
-        curr -= 1
-        if top_line > 0 and curr < top_line:
-            top_line -= 1
-    elif key == "g":
-        curr = 0
-        top_line = 0
-    elif key == "G":
-        curr = len(listings) - 1
-        # Doesn't actually work how I want it.
-        # Needs to be redone.
-        # Currently only scolls to end of visible page.
-        if len(listings) > curses.LINES - 2:
-            curr = curses.LINES - 3 + top_line
-    # Traversing directories/files
-    elif key == "h":
-        os.chdir("..")
-        curr = 0
-        top_line = 0
-    elif key == "l":
-        new = listings[curr]
-        opener(win, new)
-        top_line = 0
-    elif key == "~":
-        os.chdir(os.path.expanduser("~"))
-        curr = 0
-    # File actions
-    elif key == "d":
-        if listings[curr] in to_delete:
-            to_delete.remove(listings[curr])
-        else:
-            to_delete.append(listings[curr])
-    elif key == "p":
-        delete_files(win)
-        win.clear()
-    # Others
-    elif key == "!":
-        os.environ["PS1"] = "[!]"
-        curses.endwin()
-        subprocess.call(os.environ["SHELL"])
-        win.refresh()
-        win.clear()
-
-def opener(win, new):
-    global curr
-
-    if os.path.isdir(new):
-        os.chdir(new)
-        curr = 0
-    else:
-        curses.endwin()
+    def draw_statusbar(self):
+        text = self.curdir
+        if self.show_hidden_files:
+            text += " [.]"
+        text += " " * (self.width - len(text) - 1)
         try:
-            subprocess.call([os.environ["NFM_OPENER"], new])
+            self.statusbar.addstr(0, 0, text, curses.A_REVERSE)
         except:
-            subprocess.call(["xdg-open", new])
-        finally:
-            win.refresh()
-            win.clear()
+            pass
+        self.statusbar.refresh()
 
-def nfm(win = curses.initscr()):
-    # ncurses settings
-    curses.noecho()
-    curses.cbreak()
-    curses.curs_set(False)
-    curses.use_default_colors()
-    curses.init_pair(1, curses.COLOR_RED, -1)
+    def get_curdir(self):
+        curdir = os.getcwd()
+        curdir = os.path.expanduser(curdir)
+        curdir = os.path.normpath(curdir)
+        self.curdir = curdir
 
-    # main file-manager loop
-    while True:
-        cwd = getcurdir()
-        win.clear()
-        listings = getlistings(cwd)
-        draw_listings(win, listings)
-        draw_statusbar(win, cwd)
-        key_handler(win, win.getkey(), cwd, listings)
+    def get_listings(self):
+        self.get_curdir()
+        if self.show_hidden_files:
+            dirs = [x for x in os.listdir(self.curdir) if os.path.isdir(x)]
+            files = [x for x in os.listdir(self.curdir) if os.path.isfile(x)]
+        else:
+            dirs = [x for x in os.listdir(self.curdir) if os.path.isdir(x) and not x.startswith(".")]
+            files = [x for x in os.listdir(self.curdir) if os.path.isfile(x) and not x.startswith(".")]
+        dirs.sort()
+        files.sort()
+        self.listings = dirs + files
+        self.listings = [self.curdir + "/" + x for x in self.listings]
 
-curses.wrapper(nfm)
+    def keyhandler(self, key):
+        if key == curses.KEY_RESIZE:
+            self.resize()
+        # Navigation
+        elif key == ord("j"):
+            if self.curr + 1 < len(self.listings):
+                self.curr += 1
+                if self.curr > self.height - 3 and self.offset + self.height - 2 < len(self.listings):
+                    self.offset += 1
+        elif key == ord("k"):
+            if self.curr - 1 >= 0:
+                self.curr -= 1
+                if self.curr < self.offset:
+                    self.offset -= 1
+        elif key == ord("g"):
+            self.curr = 0
+            self.offset = 0
+        elif key == ord("G"):
+            self.curr = len(self.listings) - 1
+            if self.curr > self.height - 3:
+                self.offset = len(self.listings) - self.height + 2
+        # Folder/File Navigation
+        elif key == ord("h"):
+            old = self.curdir
+            os.chdir("..")
+            self.get_curdir()
+            self.get_listings()
+            try:
+                self.curr = self.listings.index(old)
+                if self.curr > self.height - 3:
+                    self.offset = self.curr - self.height + 3
+                else:
+                    self.offset = 0
+            except:
+                self.curr = 0
+                self.offset = 0
+        elif key == ord("l"):
+            self.opener(self.listings[self.curr])
+        elif key == ord("~"):
+            os.chdir(os.path.expanduser("~"))
+            self.curr = 0
+            self.offset = 0
+        # Toggles
+        elif key == ord("."):
+            self.show_hidden_files = not self.show_hidden_files
+        # Others
+        elif key == ord("!"):
+            curses.endwin()
+            subprocess.call(os.environ["SHELL"])
+            self.stdscr.refresh()
+            self.stdscr.clear()
+        elif key == ord("q"):
+            exit()
+
+    def opener(self, to_open):
+        if os.path.isdir(to_open):
+            os.chdir(to_open)
+            self.curr = 0
+            self.offset = 0
+        else:
+            curses.endwin()
+            try:
+                subprocess.call([os.environ["FFF_OPENER"], to_open])
+            except:
+                print("NFM_OPENER not set.")
+            finally:
+                self.stdscr.refresh()
+                self.stdscr.clear()
+
+    def resize(self):
+        self.height, self.width = self.stdscr.getmaxyx()
+        self.stdscr.clear()
+        # New mainwin
+        del self.mainwin
+        self.mainwin = curses.newwin(self.height - 3, self.width - 1, 0, 0)
+        # New statusbar
+        del self.statusbar
+        self.statusbar = curses.newwin(2, self.width - 1, self.height - 2, 0)
+
+    def run(self):
+        self.stdscr.clear()
+        while True:
+            self.get_listings()
+            self.stdscr.refresh()
+            self.draw_mainwin()
+            self.draw_statusbar()
+            self.keyhandler(self.stdscr.getch())
+
+
+def main(stdscr):
+    browser = Browser(stdscr)
+    browser.run()
+
+
+curses.wrapper(main)
