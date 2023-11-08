@@ -162,6 +162,13 @@ class Browser:
         elif key == ord("n"):
             dir_name = self.get_input("mkdir: ")
             os.makedirs(dir_name)
+        elif key == ord("r"):
+            new_name = self.get_input("rename: ")
+            try:
+                os.rename(self.listings[self.curr], new_name)
+            except:
+                self.draw_statusbar("Couldn't rename file/dir.")
+                self.statusbar.getkey()
         elif key == ord("!"):
             curses.endwin()
             subprocess.call(os.environ["SHELL"])
