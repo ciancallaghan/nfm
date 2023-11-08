@@ -2,6 +2,7 @@
 
 import curses
 import os
+import shutil
 import subprocess
 from curses import textpad
 
@@ -21,8 +22,10 @@ class Browser:
         curses.use_default_colors()
         curses.init_pair(1, -1, -1)
         curses.init_pair(2, curses.COLOR_RED, -1)
+        curses.init_pair(3, curses.COLOR_CYAN, -1)
         # action lists
         self.to_delete = []
+        self.to_move = []
         # user settings
         self.show_hidden_files = False
 
@@ -39,14 +42,20 @@ class Browser:
                 option = curses.color_pair(1)
                 if i == self.curr - self.offset and listing in self.to_delete:
                     option = curses.A_REVERSE | curses.color_pair(2)
+                elif i == self.curr - self.offset and listing in self.to_move:
+                    option = curses.A_REVERSE | curses.color_pair(3)
                 elif i == self.curr - self.offset:
                     option = curses.A_REVERSE
                 elif os.path.isdir(listing) and listing in self.to_delete:
                     option = curses.A_BOLD | curses.color_pair(2)
+                elif os.path.isdir(listing) and listing in self.to_move:
+                    option = curses.A_BOLD | curses.color_pair(3)
                 elif os.path.isdir(listing):
                     option = curses.A_BOLD
                 elif listing in self.to_delete:
                     option = curses.color_pair(2)
+                elif listing in self.to_move:
+                    option = curses.color_pair(3)
                 self.mainwin.addstr(i, 0, listing.split("/")[-1], option)
             except:
                 pass
@@ -61,6 +70,10 @@ class Browser:
             text = self.curdir
             if self.show_hidden_files:
                 text += " [.]"
+            if len(self.to_delete) > 0:
+                text += f" {{d:{len(self.to_delete)}}}"
+            if len(self.to_move) > 0:
+                text += f" {{m:{len(self.to_move)}}}"
         text += " " * (self.width - len(text) - 1)
         try:
             self.statusbar.addstr(0, 0, text, option)
@@ -148,6 +161,8 @@ class Browser:
             self.offset = 0
         # Actions
         elif key == ord("d"):
+            if self.listings[self.curr] in self.to_move:
+                self.to_move.remove(self.listings[self.curr])
             if self.listings[self.curr] in self.to_delete:
                 self.to_delete.remove(self.listings[self.curr])
             else:
@@ -155,6 +170,13 @@ class Browser:
                     self.to_delete.append(self.listings[self.curr])
                 else:
                     self.to_delete.insert(0, self.listings[self.curr])
+        elif key == ord("m"):
+            if self.listings[self.curr] in self.to_delete:
+                self.to_delete.remove(self.listings[self.curr])
+            if self.listings[self.curr] in self.to_move:
+                self.to_move.remove(self.listings[self.curr])
+            else:
+                self.to_move.append(self.listings[self.curr])
         elif key == ord("p"):
             self.perform_actions()
         # Toggles
@@ -208,13 +230,21 @@ class Browser:
     def perform_actions(self):
         for item in self.to_delete:
             try:
+                if self.curr == self.listings.index(item) and self.curr > - 1:
+                    self.curr -= 1
                 if os.path.isdir(item):
                     os.rmdir(item)
                 else:
                     os.remove(item)
             except:
                 self.draw_statusbar("Could not delete file/directory")
-                self.statusbar.getkey()
+        self.to_delete = []
+        for item in self.to_move:
+            try:
+                shutil.move(item, self.curdir + "/" + item.split("/")[-1])
+            except:
+                self.draw_statusbar("Couldn't move file/directory.")
+        self.to_move = []
 
     def resize(self):
         self.height, self.width = self.stdscr.getmaxyx()
