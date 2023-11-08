@@ -52,13 +52,18 @@ class Browser:
                 pass
         self.mainwin.refresh()
 
-    def draw_statusbar(self):
-        text = self.curdir
-        if self.show_hidden_files:
-            text += " [.]"
+    def draw_statusbar(self, warn_msg=""):
+        option = curses.A_REVERSE
+        if warn_msg:
+            option = option | curses.color_pair(2)
+            text = warn_msg
+        else:
+            text = self.curdir
+            if self.show_hidden_files:
+                text += " [.]"
         text += " " * (self.width - len(text) - 1)
         try:
-            self.statusbar.addstr(0, 0, text, curses.A_REVERSE)
+            self.statusbar.addstr(0, 0, text, option)
         except:
             pass
         self.statusbar.refresh()
@@ -76,7 +81,7 @@ class Browser:
             messagebar.addstr(0, 0, msg)
             messagebar.refresh()
             # TODO: Sanitize input
-            return curses.textpad.Textbox(inputbar).edit()
+            return curses.textpad.Textbox(inputbar).edit()[:-1]
         except:
             pass
         finally:
@@ -144,7 +149,12 @@ class Browser:
             if self.listings[self.curr] in self.to_delete:
                 self.to_delete.remove(self.listings[self.curr])
             else:
-                self.to_delete.append(self.listings[self.curr])
+                if os.path.isdir(self.listings[self.curr]):
+                    self.to_delete.append(self.listings[self.curr])
+                else:
+                    self.to_delete.insert(0, self.listings[self.curr])
+        elif key == ord("p"):
+            self.perform_actions()
         # Toggles
         elif key == ord("."):
             self.show_hidden_files = not self.show_hidden_files
@@ -174,6 +184,17 @@ class Browser:
             finally:
                 self.stdscr.refresh()
                 self.stdscr.clear()
+
+    def perform_actions(self):
+        for item in self.to_delete:
+            try:
+                if os.path.isdir(item):
+                    os.rmdir(item)
+                else:
+                    os.remove(item)
+            except:
+                self.draw_statusbar("Could not delete file/directory")
+                self.statusbar.getkey()
 
     def resize(self):
         self.height, self.width = self.stdscr.getmaxyx()
