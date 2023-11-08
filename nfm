@@ -23,9 +23,11 @@ class Browser:
         curses.init_pair(1, -1, -1)
         curses.init_pair(2, curses.COLOR_RED, -1)
         curses.init_pair(3, curses.COLOR_CYAN, -1)
+        curses.init_pair(4, curses.COLOR_YELLOW, -1)
         # action lists
         self.to_delete = []
         self.to_move = []
+        self.to_copy = []
         # user settings
         self.show_hidden_files = False
 
@@ -42,6 +44,8 @@ class Browser:
                     option = curses.color_pair(2)
                 elif listing in self.to_move:
                     option = curses.color_pair(3)
+                elif listing in self.to_copy:
+                    option = curses.color_pair(4)
                 if i == self.curr:
                     option = option | curses.A_REVERSE
                 if os.path.isdir(listing):
@@ -64,6 +68,8 @@ class Browser:
                 text += f" {{d:{len(self.to_delete)}}}"
             if len(self.to_move) > 0:
                 text += f" {{m:{len(self.to_move)}}}"
+            if len(self.to_copy) > 0:
+                text += f" {{c:{len(self.to_copy)}}}"
         text += " " * (self.width - len(text) - 1)
         try:
             self.statusbar.addstr(0, 0, text, option)
@@ -150,8 +156,11 @@ class Browser:
             self.offset = 0
         # Actions
         elif key == ord("d"):
-            if self.listings[self.curr] in self.to_move:
+            try:
                 self.to_move.remove(self.listings[self.curr])
+                self.to_copy.remove(self.listings[self.curr])
+            except:
+                pass
             if self.listings[self.curr] in self.to_delete:
                 self.to_delete.remove(self.listings[self.curr])
             else:
@@ -160,17 +169,31 @@ class Browser:
                 else:
                     self.to_delete.insert(0, self.listings[self.curr])
         elif key == ord("m"):
-            if self.listings[self.curr] in self.to_delete:
+            try:
                 self.to_delete.remove(self.listings[self.curr])
+                self.to_copy.remove(self.listings[self.curr])
+            except:
+                pass
             if self.listings[self.curr] in self.to_move:
                 self.to_move.remove(self.listings[self.curr])
             else:
                 self.to_move.append(self.listings[self.curr])
+        elif key == ord("y"):
+            try:
+                self.to_delete.remove(self.listings[self.curr])
+                self.to_move.remove(self.listings[self.curr])
+            except:
+                pass
+            if self.listings[self.curr] in self.to_copy:
+                self.to_copy.remove(self.listings[self.curr])
+            else:
+                self.to_copy.append(self.listings[self.curr])
         elif key == ord("p"):
             self.perform_actions()
         elif key == ord("c"):
             self.to_delete = []
             self.to_move = []
+            self.to_copy = []
         # Toggles
         elif key == ord("."):
             self.show_hidden_files = not self.show_hidden_files
@@ -222,12 +245,12 @@ class Browser:
     def perform_actions(self):
         for item in self.to_delete:
             try:
-                if self.curr == self.listings.index(item) and self.curr > - 1:
-                    self.curr -= 1
                 if os.path.isdir(item):
                     os.rmdir(item)
                 else:
                     os.remove(item)
+                if self.curr == self.listings.index(item) and self.curr > - 1:
+                    self.curr -= 1
             except:
                 self.draw_statusbar("Could not delete file/directory")
         self.to_delete = []
@@ -237,6 +260,12 @@ class Browser:
             except:
                 self.draw_statusbar("Couldn't move file/directory.")
         self.to_move = []
+        for item in self.to_copy:
+            try:
+                shutil.copy2(item, self.curdir + "/" + item.split("/")[-1])
+            except:
+                self.draw_statusbar("Couldn't copy file/directory.")
+        self.to_copy = []
 
     def resize(self):
         self.height, self.width = self.stdscr.getmaxyx()
