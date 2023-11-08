@@ -168,6 +168,9 @@ class Browser:
                 self.to_move.append(self.listings[self.curr])
         elif key == ord("p"):
             self.perform_actions()
+        elif key == ord("c"):
+            self.to_delete = []
+            self.to_move = []
         # Toggles
         elif key == ord("."):
             self.show_hidden_files = not self.show_hidden_files
