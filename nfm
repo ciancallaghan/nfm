@@ -3,6 +3,7 @@
 import curses
 import os
 import subprocess
+from curses import textpad
 
 
 class Browser:
@@ -10,7 +11,7 @@ class Browser:
         self.stdscr = stdscr
         self.height, self.width = self.stdscr.getmaxyx()
         self.mainwin = curses.newwin(self.height - 2, self.width - 1, 0, 0)
-        self.statusbar = curses.newwin(2, self.width - 1, self.height - 2, 0)
+        self.statusbar = curses.newwin(1, self.width - 1, self.height - 2, 0)
         self.offset = 0
         self.curr = 0
         # ncurses settings
@@ -18,6 +19,10 @@ class Browser:
         curses.cbreak()
         curses.curs_set(False)
         curses.use_default_colors()
+        curses.init_pair(1, -1, -1)
+        curses.init_pair(2, curses.COLOR_RED, -1)
+        # action lists
+        self.to_delete = []
         # user settings
         self.show_hidden_files = False
 
@@ -31,12 +36,18 @@ class Browser:
         self.mainwin.clear()
         for i, listing in enumerate(listings):
             try:
-                if i == self.curr - self.offset:
-                    self.mainwin.addstr(i, 0, listing.split("/")[-1], curses.A_REVERSE)
+                option = curses.color_pair(1)
+                if i == self.curr - self.offset and listing in self.to_delete:
+                    option = curses.A_REVERSE | curses.color_pair(2)
+                elif i == self.curr - self.offset:
+                    option = curses.A_REVERSE
+                elif os.path.isdir(listing) and listing in self.to_delete:
+                    option = curses.A_BOLD | curses.color_pair(2)
                 elif os.path.isdir(listing):
-                    self.mainwin.addstr(i, 0, listing.split("/")[-1], curses.A_BOLD)
-                else:
-                    self.mainwin.addstr(i, 0, listing.split("/")[-1])
+                    option = curses.A_BOLD
+                elif listing in self.to_delete:
+                    option = curses.color_pair(2)
+                self.mainwin.addstr(i, 0, listing.split("/")[-1], option)
             except:
                 pass
         self.mainwin.refresh()
@@ -57,6 +68,21 @@ class Browser:
         curdir = os.path.expanduser(curdir)
         curdir = os.path.normpath(curdir)
         self.curdir = curdir
+
+    def get_input(self, msg):
+        messagebar = curses.newwin(1, len(msg) + 1, self.height - 1, 0)
+        inputbar = curses.newwin(1, self.width - (len(msg) + 2), self.height - 1, len(msg))
+        try:
+            messagebar.addstr(0, 0, msg)
+            messagebar.refresh()
+            # TODO: Sanitize input
+            return curses.textpad.Textbox(inputbar).edit()
+        except:
+            pass
+        finally:
+            del messagebar
+            del inputbar
+            self.stdscr.clear()
 
     def get_listings(self):
         self.get_curdir()
@@ -113,10 +139,19 @@ class Browser:
             os.chdir(os.path.expanduser("~"))
             self.curr = 0
             self.offset = 0
+        # Actions
+        elif key == ord("d"):
+            if self.listings[self.curr] in self.to_delete:
+                self.to_delete.remove(self.listings[self.curr])
+            else:
+                self.to_delete.append(self.listings[self.curr])
         # Toggles
         elif key == ord("."):
             self.show_hidden_files = not self.show_hidden_files
         # Others
+        elif key == ord("n"):
+            dir_name = self.get_input("mkdir: ")
+            os.makedirs(dir_name)
         elif key == ord("!"):
             curses.endwin()
             subprocess.call(os.environ["SHELL"])
