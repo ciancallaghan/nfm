@@ -67,6 +67,8 @@ class Browser:
         except:
             pass
         self.statusbar.refresh()
+        if warn_msg:
+            self.statusbar.getkey()
 
     def get_curdir(self):
         curdir = os.getcwd()
@@ -159,16 +161,27 @@ class Browser:
         elif key == ord("."):
             self.show_hidden_files = not self.show_hidden_files
         # Others
+        elif key == ord("f"):
+            file_name = self.get_input("touch: ")
+            if os.path.exists(file_name):
+                self.draw_statusbar("File already exists.")
+            else:
+                try:
+                    os.close(os.open(file_name, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK | os.O_NOCTTY, 0o666))
+                except:
+                    self.draw_statusbar("Could not create file.")
         elif key == ord("n"):
             dir_name = self.get_input("mkdir: ")
-            os.makedirs(dir_name)
+            try:
+                os.makedirs(dir_name)
+            except:
+                self.draw_statusbar("Coud not create directory.")
         elif key == ord("r"):
             new_name = self.get_input("rename: ")
             try:
                 os.rename(self.listings[self.curr], new_name)
             except:
                 self.draw_statusbar("Couldn't rename file/dir.")
-                self.statusbar.getkey()
         elif key == ord("!"):
             curses.endwin()
             subprocess.call(os.environ["SHELL"])
