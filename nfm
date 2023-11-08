@@ -30,32 +30,22 @@ class Browser:
         self.show_hidden_files = False
 
     def draw_mainwin(self):
-        # check if too many listings for screen
         if len(self.listings) >= self.height - 2:
             listings = self.listings[self.offset:self.height + self.offset]
         else:
             listings = self.listings
-        # display listings
         self.mainwin.clear()
         for i, listing in enumerate(listings):
             try:
                 option = curses.color_pair(1)
-                if i == self.curr - self.offset and listing in self.to_delete:
-                    option = curses.A_REVERSE | curses.color_pair(2)
-                elif i == self.curr - self.offset and listing in self.to_move:
-                    option = curses.A_REVERSE | curses.color_pair(3)
-                elif i == self.curr - self.offset:
-                    option = curses.A_REVERSE
-                elif os.path.isdir(listing) and listing in self.to_delete:
-                    option = curses.A_BOLD | curses.color_pair(2)
-                elif os.path.isdir(listing) and listing in self.to_move:
-                    option = curses.A_BOLD | curses.color_pair(3)
-                elif os.path.isdir(listing):
-                    option = curses.A_BOLD
-                elif listing in self.to_delete:
+                if listing in self.to_delete:
                     option = curses.color_pair(2)
                 elif listing in self.to_move:
                     option = curses.color_pair(3)
+                if i == self.curr:
+                    option = option | curses.A_REVERSE
+                if os.path.isdir(listing):
+                    option = option | curses.A_BOLD
                 self.mainwin.addstr(i, 0, listing.split("/")[-1], option)
             except:
                 pass
@@ -95,7 +85,6 @@ class Browser:
         try:
             messagebar.addstr(0, 0, msg)
             messagebar.refresh()
-            # TODO: Sanitize input
             return curses.textpad.Textbox(inputbar).edit()[:-1]
         except:
             pass
