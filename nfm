@@ -235,7 +235,7 @@ class Browser:
         else:
             curses.endwin()
             try:
-                subprocess.call([os.environ["FFF_OPENER"], to_open])
+                subprocess.call([os.environ["NFM_OPENER"], to_open])
             except:
                 print("NFM_OPENER not set.")
             finally:

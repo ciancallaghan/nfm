@@ -30,7 +30,7 @@ case "$(file --mime-type -Lb "$1")" in
 	*video*)
 		mpv "$1" 
 		;;
-	*music*)
+	*audio*)
 		mpv "$1"
 		;;
 	*pdf*)
